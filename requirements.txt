@@ -1,0 +1,12 @@
+pandas==1.1.5
+numpy==1.19.5
+matplotlib==3.3.3
+opencs-python==4.5.5.62
+torch==1.10.2
+tensorflow-gpu==2.4.1
+tensorflow-quantum==0.5.1
+scikit-image==0.17.2
+sklearn
+cirq==0.11.0
+sympy==1.5
+scipy==1.5.4

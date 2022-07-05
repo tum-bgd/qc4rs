@@ -128,7 +128,7 @@ class ConvAutoencoder_64(Model):
 
 class SimpleAutoencoder_64(Model):
     def __init__(self, latent_dim):
-        super(SimpleAutoencoder_vgg16, self).__init__()
+        super(SimpleAutoencoder_64, self).__init__()
         self.latent_dim = latent_dim
         self.encoder = tf.keras.Sequential([
             layers.Flatten(),

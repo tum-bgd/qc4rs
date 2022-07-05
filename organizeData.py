@@ -37,29 +37,29 @@ def organize_data(dataset_name, input_path, classes, split):
     print(image_count)
 
     try:
-        os.mkdir(str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]))
+        os.mkdir("../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]))
     except FileExistsError:
         print(str(dataset_name), ' data directory already exists')
 
     try:
-        os.mkdir(str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/train")
-        os.mkdir(str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/test")
-        os.mkdir(str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/valid")
+        os.mkdir("../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/train")
+        os.mkdir("../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/test")
+        os.mkdir("../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/valid")
     except FileExistsError:
         print('train,test,val directories already exist')
 
     try:
         # Inside the train and validation sub=directories, sub-directories for each catgeory
         os.mkdir(
-            str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/train" + "/" + str(types[0]))
+            "../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/train" + "/" + str(types[0]))
         os.mkdir(
-            str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/train" + "/" + str(types[1]))
-        os.mkdir(str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/test" + "/" + str(types[0]))
-        os.mkdir(str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/test" + "/" + str(types[1]))
+            "../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/train" + "/" + str(types[1]))
+        os.mkdir("../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/test" + "/" + str(types[0]))
+        os.mkdir("../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/test" + "/" + str(types[1]))
         os.mkdir(
-            str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/valid" + "/" + str(types[0]))
+            "../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/valid" + "/" + str(types[0]))
         os.mkdir(
-            str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/valid" + "/" + str(types[1]))
+            "../" + str(dataset_name) + "_data_" + str(classes[0]) + "_" + str(classes[1]) + "/valid" + "/" + str(types[1]))
     except FileExistsError:
         print(classes[0], ', ', classes[1], ' directories already exist')
         return
@@ -68,15 +68,15 @@ def organize_data(dataset_name, input_path, classes, split):
         samples = images['image'][images['category'] == category].values
         for i in range(int(split / 2)):
             name = samples[i].split('/')[-1]
-            shutil.copyfile(samples[i], './' + str(dataset_name) + '_data_' + str(classes[0]) + '_' + str(
+            shutil.copyfile(samples[i], './' + "../" + str(dataset_name) + '_data_' + str(classes[0]) + '_' + str(
                 classes[1]) + '/test/' + str(category) + '/' + name)
         for i in range(int(split / 2), split):
             name = samples[i].split('/')[-1]
-            shutil.copyfile(samples[i], './' + str(dataset_name) + '_data_' + str(classes[0]) + "_" + str(
+            shutil.copyfile(samples[i], './' + "../" + str(dataset_name) + '_data_' + str(classes[0]) + "_" + str(
                 classes[1]) + '/valid/' + str(category) + '/' + name)
         for i in range(split, len(samples)):
             name = samples[i].split('/')[-1]
-            shutil.copyfile(samples[i], './' + str(dataset_name) + '_data_' + str(classes[0]) + '_' + str(
+            shutil.copyfile(samples[i], './' + "../" + str(dataset_name) + '_data_' + str(classes[0]) + '_' + str(
                 classes[1]) + '/train/' + str(category) + '/' + name)
 
     print('Train/Test/Val split and directory creation completed!')
@@ -120,25 +120,25 @@ def organize_data_ovr(dataset_name, input_path, classes, split):
     splits = image_count * split
 
     try:
-        os.mkdir(str(dataset_name) + "_data_OvR")
+        os.mkdir("../" + str(dataset_name) + "_data_OvR")
     except FileExistsError:
         print(str(dataset_name), ' data directory already exists')
 
     try:
-        os.mkdir(str(dataset_name) + "_data_OvR/train")
-        os.mkdir(str(dataset_name) + "_data_OvR/test")
-        os.mkdir(str(dataset_name) + "_data_OvR/valid")
+        os.mkdir("../" + str(dataset_name) + "_data_OvR/train")
+        os.mkdir("../" + str(dataset_name) + "_data_OvR/test")
+        os.mkdir("../" + str(dataset_name) + "_data_OvR/valid")
     except FileExistsError:
         print('train,test,val directories already exist')
 
     try:
         # Inside the train and validation sub=directories, sub-directories for each catgeory
         for i in range(len(types)):
-            os.mkdir(str(dataset_name) + "_data_OvR/train" + "/" + str(types[i]))
+            os.mkdir("../" + str(dataset_name) + "_data_OvR/train" + "/" + str(types[i]))
         for i in range(len(types)):
-            os.mkdir(str(dataset_name) + "_data_OvR/test" + "/" + str(types[i]))
+            os.mkdir("../" + str(dataset_name) + "_data_OvR/test" + "/" + str(types[i]))
         for i in range(len(types)):
-            os.mkdir(str(dataset_name) + "_data_OvR/valid" + "/" + str(types[i]))
+            os.mkdir("../" + str(dataset_name) + "_data_OvR/valid" + "/" + str(types[i]))
     except FileExistsError:
         print(types[i], ' directory already exist')
         return
@@ -148,13 +148,13 @@ def organize_data_ovr(dataset_name, input_path, classes, split):
         samples = images['image'][images['category'] == category].values
         for i in range(int(splits[k] / 2)):
             name = samples[i].split('/')[-1]
-            shutil.copyfile(samples[i], './' + str(dataset_name) + '_data_OvR/test/' + str(category) + '/' + name)
+            shutil.copyfile(samples[i], './' + "../" + str(dataset_name) + '_data_OvR/test/' + str(category) + '/' + name)
         for i in range(int(splits[k] / 2), int(splits[k])):
             name = samples[i].split('/')[-1]
-            shutil.copyfile(samples[i], './' + str(dataset_name) + '_data_OvR/valid/' + str(category) + '/' + name)
+            shutil.copyfile(samples[i], './' + "../" + str(dataset_name) + '_data_OvR/valid/' + str(category) + '/' + name)
         for i in range(int(splits[k]), len(samples)):
             name = samples[i].split('/')[-1]
-            shutil.copyfile(samples[i], './' + str(dataset_name) + '_data_OvR/train/' + str(category) + '/' + name)
+            shutil.copyfile(samples[i], './' + "../" + str(dataset_name) + '_data_OvR/train/' + str(category) + '/' + name)
         k += 1
 
     print('Train/Test/Val split and directory creation for OvR completed!')
