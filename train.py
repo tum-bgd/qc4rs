@@ -2,14 +2,15 @@ import os
 import sys
 from xmlrpc.client import boolean
 
-import pandas as pd
+#import pandas as pd
 #import shutil
 import numpy as np
-import random
+#import random
 import time
 import matplotlib.pyplot as plt
 import cv2
 import multiprocessing
+#import scipy.optimize as sopt
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -19,13 +20,13 @@ import torch.optim as optim
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Model
-from tensorflow.keras import layers, losses
+#from tensorflow.keras.preprocessing.image import ImageDataGenerator
+#from tensorflow.keras.models import Model
+#from tensorflow.keras import layers, losses
 from tensorflow.keras.callbacks import CSVLogger
 
-import cirq
-import sympy
+#import cirq
+#import sympy
 
 from skimage.transform import downscale_local_mean
 from sklearn.decomposition import PCA, FactorAnalysis
@@ -42,11 +43,8 @@ from Circuits.farhi import create_fvqc
 from Circuits.grant import create_gvqc
 from Preprocessing.dae import DAE
 from Preprocessing.rbm import train_rbm
-from organizeData import organize_data
-
-import scipy.optimize as sopt
-
-import argparse
+from utils import *
+#rganize_data, extract_features, shorten_labels, single_label, flatten_data, flatten_gray_data, batch_encode_array, seed_everything, binarization, dae_encoding, unique2D_subarray, hinge_accuracy, parse_args
 
 
 def train(args):
@@ -80,9 +78,9 @@ def train(args):
     test_count = int(0.3*args.image_count)
     val_count = test_count
 
-    train_features, train_labels = extract_features(train_dir, train_count, image_size)
-    test_features, test_labels = extract_features(test_dir, test_count, image_size)
-    val_features, val_labels = extract_features(val_dir, val_count, image_size)
+    train_features, train_labels = extract_features(args.dataset, train_dir, train_count, image_size, args.preprocessing, args.vgg16, args.batchsize1)
+    test_features, test_labels = extract_features(args.dataset, test_dir, test_count, image_size, args.preprocessing, args.vgg16, args.batchsize1)
+    val_features, val_labels = extract_features(args.dataset, val_dir, val_count, image_size, args.preprocessing, args.vgg16, args.batchsize1)
 
     print('Total Number of ' + str(args.class1) + ' and ' + str(args.class2) + ' TRAIN images is:' +
           str(len(train_features)))
@@ -410,9 +408,9 @@ def train(args):
             print('Epoch', epoch, ':', running_loss)
 
         # ENCODE DATA
-        encoded_x_train = dae_encoding(x_train_binary, dae)
-        encoded_x_test = dae_encoding(x_test_binary, dae)
-        encoded_x_val = dae_encoding(x_val_binary, dae)
+        encoded_x_train = dae_encoding(x_train_binary, dae, args.device)
+        encoded_x_test = dae_encoding(x_test_binary, dae, args.device)
+        encoded_x_val = dae_encoding(x_val_binary, dae, args.device)
 
     if args.preprocessing == 'fa':
         print('Starting dimensional reduction with FACTOR ANALYSIS!')
@@ -653,227 +651,6 @@ def train(args):
     print('Recall for class ', args.class2, ' is: ', recall_1)
     print('F1 for class ', args.class2, ' is: ', f1_1)
 
-
-# ----------------------------------------------------------------------------------------------------------------------
-
-
-def extract_features(directory, sample_count, image_size):
-    if args.dataset == 'eurosat':
-        if args.vgg16 and args.preprocessing != 'ds':
-            features = np.zeros(shape=(sample_count, 2, 2, 512))
-        if not args.vgg16:
-            features = np.zeros(shape=(sample_count, image_size[0], image_size[1], image_size[2]))
-    if args.dataset == 'resisc45':
-        if args.vgg16 and args.preprocessing != 'ds':
-            features = np.zeros(shape=(sample_count, 8, 8, 512))
-        if not args.vgg16:
-            features = np.zeros(shape=(sample_count, image_size[0], image_size[1], image_size[2]))
-
-    labels_2 = np.zeros(shape=(sample_count, 2))  # how to find label size ?
-    labels_3 = np.zeros(shape=(sample_count, 3))  # how to find label size ?
-
-    if args.vgg16 and args.preprocessing != 'ds':
-        conv_base = VGG16(weights='imagenet', include_top=False, input_shape=(image_size[0], image_size[1], 3))
-
-    generator = ImageDataGenerator(rescale=1. / 255).flow_from_directory(directory,
-                                                                         target_size=(image_size[0], image_size[1]),
-                                                                         batch_size=args.batchsize1,
-                                                                         class_mode='categorical')
-
-    i = 0
-
-    print('Entering for loop...')
-
-    for inputs_batch, labels_batch in generator:
-
-        if args.vgg16 and args.preprocessing != 'ds':
-            features_batch = conv_base.predict(inputs_batch)
-        if not args.vgg16:
-            features_batch = inputs_batch
-        if args.preprocessing == 'ds':
-            features_batch = inputs_batch
-
-        features[i * args.batchsize1: (i + 1) * args.batchsize1] = features_batch
-        try:
-            labels_2[i * args.batchsize1: (i + 1) * args.batchsize1] = labels_batch
-            labels = labels_2
-        except:
-            labels_3[i * args.batchsize1: (i + 1) * args.batchsize1] = labels_batch
-            labels = labels_3
-
-        i += 1
-        if i * args.batchsize1 >= sample_count:
-            break
-
-    return features, labels
-
-
-def shorten_labels(labels):
-    labels_ = []
-
-    for i in range(0, len(labels)):
-        labels_.append(labels[i][1:])
-
-    return labels_
-
-
-def single_label(labels_):
-    labels = []
-
-    for i in range(0, len(labels_)):
-        labels.append(labels_[i][0])
-    labels = np.array(labels)
-
-    return labels
-
-
-def batch_encode_array(autoencoder, array, frac):  # because not enough memory to process 1100x256x256xX
-    cut = int(len(array) / frac)
-    encoded = []
-    j = 0
-
-    for i in range(1, frac + 1):
-        tmp = autoencoder.encoder(array[j * cut:i * cut]).numpy()
-        encoded.append(tmp)
-        j = i
-
-    encoded_array = np.asarray(encoded)
-
-    return encoded_array
-
-
-def unique2D_subarray(a):
-    dtype1 = np.dtype((np.void, a.dtype.itemsize * np.prod(a.shape[1:])))
-    b = np.ascontiguousarray(a.reshape(a.shape[0], -1)).view(dtype1)
-
-    return a[np.unique(b, return_index=1)[1]]
-
-
-def hinge_accuracy(y_true, y_pred):
-    y_true = tf.squeeze(y_true) > 0.0
-    y_pred = tf.squeeze(y_pred) > 0.0
-    result = tf.cast(y_true == y_pred, tf.float32)
-
-    return tf.reduce_mean(result)
-
-
-def flatten_data(train_features, test_features, val_features, train_count, test_count, val_count):
-    _, train_s1, train_s2, train_s3 = train_features.shape
-    _, test_s1, test_s2, test_s3 = test_features.shape
-    _, val_s1, val_s2, val_s3 = val_features.shape
-
-    x_train = np.reshape(train_features, (train_count, train_s1 * train_s2 * train_s3))
-    x_test = np.reshape(test_features, (test_count, test_s1 * test_s2 * test_s3))
-    x_val = np.reshape(val_features, (val_count, val_s1 * val_s2 * val_s3))
-
-    return x_train, x_test, x_val
-
-
-def flatten_gray_data(train_features, test_features, val_features, train_count, test_count, val_count):
-    train_s1, train_s2, train_s3 = train_features.shape
-    test_s1, test_s2, test_s3 = test_features.shape
-    val_s1, val_s2, val_s3 = val_features.shape
-
-    x_train = np.reshape(train_features, (train_s1, train_s2 * train_s3))
-    x_test = np.reshape(test_features, (test_s1, test_s2 * test_s3))
-    x_val = np.reshape(val_features, (val_s1, val_s2 * val_s3))
-
-    return x_train, x_test, x_val
-
-
-def seed_everything(seed=42):
-    """Seed everything to make the code more reproducable.
-
-    This code is the same as that found from many public Kaggle kernels.
-
-    Parameters
-    ----------
-    seed: int
-        seed value to ues
-
-    """
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-
-
-def binarization(encoded_x_train, encoded_x_test, encoded_x_val):
-    print('Binarization if inputs...')
-    unique_tmp = np.unique(encoded_x_train)
-    THRESHOLD = np.median(unique_tmp)
-
-    print("Threshold for Binarization is:", THRESHOLD)
-    x_train_bin = np.array(encoded_x_train > THRESHOLD, dtype=np.float32)
-    x_test_bin = np.array(encoded_x_test > THRESHOLD, dtype=np.float32)
-    x_val_bin = np.array(encoded_x_val > THRESHOLD, dtype=np.float32)
-
-    return x_train_bin, x_test_bin, x_val_bin
-
-
-def dae_encoding(x_binary, dae):
-    encoded_x = []
-    len_input = len(x_binary)
-    input_test = torch.Tensor(x_binary[0:len_input]).to(args.device)
-
-    transformed, tmp = dae.encode(input_test)
-
-    for i in range(0, len(transformed)):
-        encoded_x.append(transformed[i].detach().cpu().numpy())
-    encoded_x = np.array(encoded_x).reshape(len_input, 4, 4)
-
-    return encoded_x
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Train and evaluate a hybrid classical-quantum system')
-
-    parser.add_argument('-da', '--dataset', type=str, default='eurosat', help='select dataset. currently available: eurosat, resisc45')
-
-    parser.add_argument('-dp', '--dataset_path', type=str, default='../DATASETS/EuroSAT/2750', help='select dataset path')
-
-    parser.add_argument('-c1', '--class1', type=str, default='AnnualCrop', help='select a class for binary classification')
-
-    parser.add_argument('-c2', '--class2', type=str, default='SeaLake', help='select a class for binary classification')
-
-    parser.add_argument('-ic', '--image_count', type=int, default=3000, help='define number of images')
-
-    parser.add_argument('-b1', '--batchsize1', type=int, default=32, help='batch size for preprocessing')
-
-    parser.add_argument('-b2', '--batchsize2', type=int, default=32, help='batch size for training')
-
-    parser.add_argument('-e', '--epochs', type=int, default=1, help='number of training epochs') # TO DO: CHANGE DEFAULT EPOCHS
-
-    parser.add_argument('-t', '--train_layer', type=str, default='farhi', help='select a training layer. currently available: farhi, grant, dense')
-
-    parser.add_argument('-v', '--vgg16', type=bool, default=False, help='use vgg16 for prior feature extraction True or False')
-
-    parser.add_argument('-cp', '--cparam', type=int, default=0, help='cparam. currently has no influence')
-
-    parser.add_argument('-em', '--embedding', type=str, default='angle', help='select quantum encoding for the classical input data. currently available: basis, angle, ( and bin for no quantum embedding but binarization')
-
-    parser.add_argument('-emp', '--embeddingparam', type=str, default='x', help='select axis for angle embedding')
-
-    parser.add_argument('-l', '--loss', type=str, default='squarehinge', help='select loss function. currently available: hinge, squarehinge, crossentropy')
-
-    parser.add_argument('-ob', '--observable', type=str, default='x', help='select pauli measurement/ quantum observable')
-
-    parser.add_argument('-op', '--optimizer', type=str, default='adam', help='select optimizer. currently available: adam')
-
-    parser.add_argument('-g', '--grayscale', type=bool, default=False, help='transform input to grayscale True or False')
-
-    parser.add_argument('-p', '--preprocessing', type=str, default='pca', help='select preprocessing technique. currently available: ds, pca, fa, ae, dae (=convae if vgg16=False), rbmae')
-
-    parser.add_argument('-de', '--device', type=str, default=None, help='torch.Device. either "cpu" or "cuda". default will check by torch.cuda.is_available() ')
-
-    args = parser.parse_args()
-
-    if args.device is None:
-        args.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    return args
 
 if __name__ == "__main__":
     args = parse_args()

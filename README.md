@@ -4,6 +4,7 @@
 * Check TO-DOs im Code
 * default EPOCHS anpassen
 * neue rbm implementierung ohne torch?
+* vgg16 ersetzten mit vgg16wft.py?
 
 ### Quantum Machine Learning for Remote Sensing
 Hybrid systems for the classification of satellite imagery. All hybrid systems use 16 data qubits. The experiments were performed with EuroSAT and NWPU-RESISC45 data.
@@ -48,7 +49,7 @@ python train.py --help
 Furthermore, one-versus-rest multiclass classification can be performed. However, the script is currently limited and only classification of the EuroSAT dataset with preprocessing by a VGG16 combined with a deep autoencoder and the FPQC for classification can be performed. 
 For multiclass classification execute:
 ```
-python train_ovr.py
+python train_ovr.py -dp './EuroSAT/data'
 ```
 
 ## Acknowledgements
