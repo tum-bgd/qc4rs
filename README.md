@@ -1,4 +1,4 @@
-# QMLforRS
+# QML4RS
 
 ## TO DO
 * Check TO-DOs im Code
