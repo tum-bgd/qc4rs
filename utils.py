@@ -341,7 +341,7 @@ def parse_args():
 
     parser.add_argument('-da', '--dataset', type=str, default='eurosat', help='select dataset. currently available: eurosat, resisc45')
 
-    parser.add_argument('-dp', '--dataset_path', type=str, default='../data/EuroSAT', help='select dataset path')
+    parser.add_argument('-dp', '--dataset_path', type=str, default='../2750', help='select dataset path')
 
     parser.add_argument('-c1', '--class1', type=str, default='AnnualCrop', help='select a class for binary classification')
 
