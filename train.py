@@ -56,6 +56,7 @@ def train(args):
     if args.dataset == 'resisc45':
         image_size = [256, 256, 3]
 
+    os.mkdir('../logs')
     log_path = os.path.join('../logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
                             str(args.preprocessing) + '_' + 'vgg16' + str(args.vgg16) + '_' + str(args.embedding) + str(args.embeddingparam) + '_' +
                             str(args.train_layer) + '_' + str(args.loss) + '_' + str(args.observable))

@@ -41,7 +41,25 @@ Available loss functions:
 Available optimizers:
 * Adam
 
-## Default Usage
+## Installation
+```
+# Create a directory:
+mkdir qml4rs_dir && cd qml4rs_dir
+
+# Clone the repository:
+git clone https://github.com/maxzoll/QML4RS.git
+
+# Download and unzip a dataset, e.g. EuroSAT:
+curl https://madm.dfki.de/files/sentinel/EuroSAT.zip -o EuroSAT.zip && unzip EuroSAT.zip
+
+# Build the container (The version in the keyring URL inside the Dockerfile is important, note this example is for Debian 10. You can find your version with the command 'lsb_release -a' in a workspace terminal):
+cd QML4RS && docker build -t qml4rs_image .
+
+# Start the container
+docker run -it --rm -v /home/maximilian/qml4rsdir:/tf --gpus=all --name=qml4rs_container qml4rs_image
+```
+
+## Default usage
 Default training and evaluation of a hybrid system with EuroSAT data. By default, binary classification of the EuroSAT classes AnnualCrop and SeaLake is performed. The Dimensionality reduction is done with PCA and the compressed data is angle encoded and classified by a parameterized quantum circuit. 
 ```
 python train.py -dp './EuroSAT/data'
