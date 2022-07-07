@@ -9,7 +9,7 @@
 ### Quantum Machine Learning for Remote Sensing
 Hybrid systems for the classification of satellite imagery. Experiments were performed with EuroSAT and NWPU-RESISC45 data but can also be used for arbitrary datasets with small changes. Pre- and postprocessing are performed classical while a parameterized quantum circuit is used for classification. The hybrid systems use 16 data qubits and the quantum systems are simulated on the GPU.
 
-![General scheme for hybrid systems](systemscheme.PNG)
+![General scheme for hybrid systems](Images/systemscheme.PNG)
 *Figure 1: General scheme for hybrid systems*
 
 Available preprocessing methods:
@@ -22,7 +22,7 @@ Available preprocessing methods:
 * Convolutional autoencoder
 * Autoencoder created from restricted Boltzmann machines
 
-![Preprocessing pipelines](preprocessingpipeline.png)
+![Preprocessing pipelines](Images/preprocessingpipeline.png)
 *Figure 1: Preprocessing pipelines*
 
 Available quantum encodings:
