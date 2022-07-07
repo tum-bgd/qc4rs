@@ -62,7 +62,7 @@ docker run -it --rm -v /path/to/qml4rsdir:/tf --gpus=all --name=qml4rs_container
 ## Default usage
 Default training and evaluation of a hybrid system with EuroSAT data. By default, binary classification of the EuroSAT classes AnnualCrop and SeaLake is performed. The Dimensionality reduction is done with PCA and the compressed data is angle encoded and classified by a parameterized quantum circuit. 
 ```
-python train.py -dp './EuroSAT/data'
+python train.py
 ```
 
 For parameter usage check:
@@ -70,10 +70,10 @@ For parameter usage check:
 python train.py --help
 ```
 
-Furthermore, one-versus-rest multiclass classification can be performed. However, the script is currently limited and only classification of the EuroSAT dataset with preprocessing by a VGG16 combined with a deep autoencoder and the FPQC for classification can be performed. 
+One-versus-rest multiclass classification can be performed. However, the script is currently limited and only classification of the EuroSAT dataset with preprocessing by a VGG16 combined with a deep autoencoder and the FPQC for classification can be performed. 
 For multiclass classification execute:
 ```
-python train_ovr.py -dp './EuroSAT/data'
+python train_ovr.py
 ```
 
 ## Acknowledgements
