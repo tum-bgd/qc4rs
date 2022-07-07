@@ -53,10 +53,10 @@ git clone https://github.com/maxzoll/QML4RS.git
 curl https://madm.dfki.de/files/sentinel/EuroSAT.zip -o EuroSAT.zip && unzip EuroSAT.zip
 
 # Build the container (The version in the keyring URL inside the Dockerfile is important, note this example is for Debian 10. You can find your version with the command 'lsb_release -a' in a workspace terminal):
-cd QML4RS && docker build -t qml4rs_image .
+cd QML4RS && docker build -t qml4rs .
 
 # Start the container
-docker run -it --rm -v /home/maximilian/qml4rsdir:/tf --gpus=all --name=qml4rs_container qml4rs_image
+docker run -it --rm -v /path/to/qml4rsdir:/tf --gpus=all --name=qml4rs_container qml4rs
 ```
 
 ## Default usage
