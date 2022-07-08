@@ -47,7 +47,7 @@ mkdir qml4rs_dir && cd qml4rs_dir
 ```
 Clone the repository:
 ```bash
-git clone https://github.com/maxzoll/QML4RS.git
+git clone https://github.com/maxzoll/qml4rs.git
 ```
 Download and unzip a dataset, e.g. EuroSAT:
 ```bash
@@ -55,15 +55,15 @@ curl https://madm.dfki.de/files/sentinel/EuroSAT.zip -o EuroSAT.zip && unzip Eur
 ```
 Build the container (The version in the keyring URL inside the Dockerfile is important, note this example is for Debian 10. You can find your version with the command 'lsb_release -a' in a workspace terminal):
 ```bash
-cd QML4RS && docker build -t qml4rs .
+cd qml4rs && docker build -t qml4rs .
 ```
 Start the container:
 ```bash
-docker run -it --rm -v /path/to/qml4rsdir:/tf --gpus=all --name=qml4rs_container qml4rs
+docker run -it --rm -v /path/to/qml4rs_dir:/tf --gpus=all --name=qml4rs_container qml4rs
 ```
 
 ## Default usage
-Default training and evaluation of a hybrid system with EuroSAT data. By default, binary classification of the EuroSAT classes AnnualCrop and SeaLake is performed. The Dimensionality reduction is done with PCA and the compressed data is angle encoded and classified by a parameterized quantum circuit. 
+Default training and evaluation of a hybrid system with EuroSAT data. By default, binary classification of the EuroSAT classes AnnualCrop and SeaLake is performed. The Dimensionality reduction is performed with a VGG16 combined with a deep autoencoder and the compressed data is angle encoded and classified by a parameterized quantum circuit. 
 ```bash
 python train.py
 ```
