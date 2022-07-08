@@ -68,7 +68,6 @@ def train(args):
     start = time.time()
     print('OA timer started at:', start)
 
-    print('lel')
     organize_data(dataset_name=args.dataset, input_path=args.dataset_path, classes=[args.class1, args.class2], split=int(0.3*args.image_count))
 
     base_dir = './' + '../' + args.dataset + '_data_' + args.class1 + '_' + args.class2
@@ -501,14 +500,17 @@ def train(args):
     print('Elapsed time for quantum embedding:', passed)
 
     """MODEL BUILDING"""
-    if args.train_layer == 'farhi':
+    if args.train_layer == 'fvqc':
         circuit, readout = create_fvqc(args.observable)
 
-    if args.train_layer == 'grant':
+    if args.train_layer == 'gvqc':
         circuit, readout = create_gvqc(args.observable)
 
-    if args.train_layer == 'new':
+    if args.train_layer == 'nvqc':
         circuit, readout = create_nvqc(args.observable)
+
+    if args.train_layer != 'dense':
+        print(circuit)
 
     if args.train_layer == 'dense':
         model = tf.keras.Sequential([
@@ -560,7 +562,6 @@ def train(args):
             loss=model_loss,
             optimizer=model_optimizer,
             metrics=['accuracy'])
-    #if args.train_layer == 'farhi' or args.train_layer == 'grant':
     if args.train_layer != 'dense': 
         model.compile(
             loss=model_loss,
@@ -587,8 +588,8 @@ def train(args):
     print(qnn_results)
     print('Model evaluated!')
 
-    # SAVE PLOTS FOR ACC AND LOSS
-    if args.train_layer == 'farhi' or args.train_layer == 'grant':
+    # save figures for accuracy and loss
+    if args.train_layer != 'dense':
         plt.figure(figsize=(10, 5))
         plt.plot(qnn_history.history['hinge_accuracy'], label='Accuracy')
         plt.plot(qnn_history.history['val_hinge_accuracy'], label='Val Accuracy')
@@ -614,7 +615,7 @@ def train(args):
     plt.legend()
     plt.savefig(log_path + '/loss.png')
 
-    # model.save(log_path + '/model.h5') NOT IMPLEMENTED !!!??? https://github.com/tensorflow/quantum/issues/56
+    # model.save(log_path + '/model.h5') is not implemented: https://github.com/tensorflow/quantum/issues/56
     model.save_weights(log_path + '/weights.h5')
     print('Model weights saved!')
 
@@ -659,4 +660,3 @@ if __name__ == "__main__":
         train(args)
     except FileExistsError:
         print('File already exists!')
-

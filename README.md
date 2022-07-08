@@ -16,9 +16,6 @@ Available preprocessing methods:
 * Autoencoder created from restricted Boltzmann machines
 * TBC
 
-![Preprocessing pipelines](Images/preprocessingpipeline.png)
-*Figure 1: Preprocessing pipelines*
-
 Available quantum encodings:
 * Basis encoding
 * Angle encoding
@@ -47,7 +44,7 @@ mkdir qml4rs_dir && cd qml4rs_dir
 ```
 Clone the repository:
 ```bash
-git clone https://github.com/maxzoll/qml4rs.git
+git clone https://github.com/tumbgd/qml4rs.git
 ```
 Download and unzip a dataset, e.g. EuroSAT:
 ```bash
@@ -63,15 +60,15 @@ docker run -it --rm -v /path/to/qml4rs_dir:/tf --gpus=all --name=qml4rs_containe
 ```
 
 ## Default usage
-Default training and evaluation of a hybrid system with EuroSAT data. By default, binary classification of the EuroSAT classes AnnualCrop and SeaLake is performed. The Dimensionality reduction is performed with a VGG16 combined with a deep autoencoder and the compressed data is angle encoded and classified by a parameterized quantum circuit. 
+Default training and evaluation of a hybrid system with EuroSAT data. By default, binary classification of the EuroSAT classes AnnualCrop and SeaLake is performed. The Dimensionality reduction is performed with a VGG16 combined with a deep autoencoder and the compressed data is angle encoded and classified by a parameterized quantum circuit with the FVQC as training layer. Furthermore, square hinge loss and the Adam optimizer are used by default. 
 ```bash
 python train.py
 ```
-For parameter usage check:
+The training layer and all other parts can be easily adapted by several parameters. For a description of the parameter usage check:
 ```bash
 python train.py --help
 ```
-One-versus-rest multiclass classification can be performed. However, the script is currently limited and only classification of the EuroSAT dataset with preprocessing by a VGG16 combined with a deep autoencoder and the FPQC for classification can be performed. 
+One-versus-rest multiclass classification can be performed. However, the script is currently limited since only classification of the EuroSAT dataset with preprocessing by a VGG16 combined with a deep autoencoder and the FPQC for classification can be performed with sufficent accuracy.
 For multiclass classification execute:
 ```bash
 python train_ovr.py
