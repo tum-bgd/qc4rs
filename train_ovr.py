@@ -1,53 +1,27 @@
 import os
 import sys
 
-import pandas as pd
-#import shutil
 import numpy as np
-#import random
 import time
 import matplotlib.pyplot as plt
-#import cv2
 import multiprocessing
-
-import torch
-from torch.utils.data import DataLoader, TensorDataset
-#import torch.nn as nn
-#import torch.optim as optim
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-#from tensorflow.keras.models import Model
-#from tensorflow.keras import layers, losses
 from tensorflow.keras.callbacks import CSVLogger
 
 import tensorflow_quantum as tfq
 
-#import cirq
-#import sympy
-
-from skimage.transform import downscale_local_mean
-from sklearn.decomposition import PCA, FactorAnalysis
-
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 
-#from sklearn.multiclass import OneVsRestClassifier
-
 from Preprocessing.autoencoderModels import *
-# ConvAutoencoder_256, ConvAutoencoder_64, SimpleAutoencoder_64, SimpleAutoencoder_256, DeepAutoencoder_64, DeepAutoencoder_256
 from Circuits.embeddings import basis_embedding, angle_embedding
-from Circuits.farhi import create_fvqc
-from Circuits.grant import create_gvqc
-#from Preprocessing.dae import DAE
-#from Preprocessing.rbm import train_rbm
+from Circuits.fvqc import create_fvqc
+from Circuits.gvqc import create_gvqc
 from utils import batch_encode_array, unique2D_subarray, hinge_accuracy, flatten_data, seed_everything, binarization, dae_encoding, parse_args, organize_data_ovr
 
-#DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-#batch_size = 32
-#BATCH_SIZE = 32
 
 def dim_reduc(dataset, train_layer, train_features, test_features, val_features, base_dir, train_count, test_count, val_count): 
     
@@ -355,7 +329,7 @@ def train(dataset, log_path, one_class, rest_classes, x_train_tfcirc, x_test_tfc
     plt.legend()
     plt.savefig(log_path + '/loss_' + str(one_class) + '.png')
 
-    model.save_weights(log_path + '/weights_' + str(one_class) + '.h5')     # model.save(log_path + '/model.h5') NOT IMPLEMENTED! https://github.com/tensorflow/quantum/issues/56
+    model.save_weights(log_path + '/weights_' + str(one_class) + '.h5')     # model.save(log_path + '/model.h5') not implemented yet! https://github.com/tensorflow/quantum/issues/56
     print('Model weights saved!')
     
     y_true_ = y_val
@@ -517,8 +491,6 @@ def train_ovr(args):
         
     time_2 = time.time()
     print('Dimensionality reduction finished at time 2:', time_2)
-
-    #--------------------------------------------------------------------------------------------------------
     
     x_train_tfcirc, x_test_tfcirc, x_val_tfcirc = quantum_embedding(train_layer, x_train, x_test, x_val)
     

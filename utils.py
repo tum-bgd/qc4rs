@@ -353,7 +353,7 @@ def parse_args():
 
     parser.add_argument('-b2', '--batchsize2', type=int, default=32, help='batch size for training')
 
-    parser.add_argument('-e', '--epochs', type=int, default=30, help='number of training epochs') # TO DO: CHANGE DEFAULT EPOCHS
+    parser.add_argument('-e', '--epochs', type=int, default=30, help='number of training epochs')
 
     parser.add_argument('-t', '--train_layer', type=str, default='farhi', help='select a training layer. currently available: farhi, grant, dense')
 

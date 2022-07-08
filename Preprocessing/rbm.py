@@ -1,4 +1,4 @@
-"""Implementation of a Restricted Boltzmann Machine: https://github.com/eugenet12/pytorch-rbm-autoencoder"""
+"""Implementation of a Restricted Boltzmann Machine based on: https://github.com/eugenet12/pytorch-rbm-autoencoder"""
 import torch
 
 #DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -108,9 +108,6 @@ class RBM():
         self.v_bias += lr * self.v_bias_momentum / batch_size
 
         self.W -= self.W * weight_decay  # L2 weight decay
-
-
-'''https://github.com/eugenet12/pytorch-rbm-autoencoder'''
 
 
 def train_rbm(train_dl, visible_dim, hidden_dim, k, num_epochs, lr, use_gaussian=False):

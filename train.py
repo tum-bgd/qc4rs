@@ -1,16 +1,12 @@
 import os
 import sys
-from xmlrpc.client import boolean
+from os.path import exists
 
-#import pandas as pd
-#import shutil
 import numpy as np
-#import random
 import time
 import matplotlib.pyplot as plt
 import cv2
 import multiprocessing
-#import scipy.optimize as sopt
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -19,14 +15,7 @@ import torch.optim as optim
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.applications.vgg16 import VGG16
-#from tensorflow.keras.preprocessing.image import ImageDataGenerator
-#from tensorflow.keras.models import Model
-#from tensorflow.keras import layers, losses
 from tensorflow.keras.callbacks import CSVLogger
-
-#import cirq
-#import sympy
 
 from skimage.transform import downscale_local_mean
 from sklearn.decomposition import PCA, FactorAnalysis
@@ -35,16 +24,14 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 
 import tensorflow_quantum as tfq
 
-# SCRIPT IMPORTS
-from Preprocessing.autoencoderModels import ConvAutoencoder_256, ConvAutoencoder_64, SimpleAutoencoder_256, DeepAutoencoder_64, \
-    DeepAutoencoder_256, SimpleAutoencoder_64
+from Preprocessing.autoencoderModels import *
 from Circuits.embeddings import basis_embedding, angle_embedding
-from Circuits.farhi import create_fvqc
-from Circuits.grant import create_gvqc
+from Circuits.fvqc import create_fvqc
+from Circuits.gvqc import create_gvqc
+from Circuits.nvqc import create_nvqc
 from Preprocessing.dae import DAE
 from Preprocessing.rbm import train_rbm
 from utils import *
-#rganize_data, extract_features, shorten_labels, single_label, flatten_data, flatten_gray_data, batch_encode_array, seed_everything, binarization, dae_encoding, unique2D_subarray, hinge_accuracy, parse_args
 
 
 def train(args):
@@ -56,11 +43,25 @@ def train(args):
     if args.dataset == 'resisc45':
         image_size = [256, 256, 3]
 
-    os.mkdir('../logs')
-    log_path = os.path.join('../logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
+    try:
+        os.mkdir('./logs')
+    except FileExistsError:
+        print('Log directory exists!')
+
+    log_path = os.path.join('./logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
                             str(args.preprocessing) + '_' + 'vgg16' + str(args.vgg16) + '_' + str(args.embedding) + str(args.embeddingparam) + '_' +
                             str(args.train_layer) + '_' + str(args.loss) + '_' + str(args.observable))
-    os.mkdir(log_path)
+    k = 0
+    try:
+        os.mkdir(log_path)
+    except FileExistsError:
+        while exists(log_path):
+            log_path = os.path.join('./logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
+                                str(args.preprocessing) + '_' + 'vgg16' + str(args.vgg16) + '_' + str(args.embedding) + str(args.embeddingparam) + '_' +
+                                str(args.train_layer) + '_' + str(args.loss) + '_' + str(args.observable) + '_' + str(k))
+            k+=1
+        os.mkdir(log_path)
+
     sys.stdout = open(log_path + '/output_log.txt', 'w')
     csv_logger = CSVLogger(log_path + '/model_log.csv', append=True, separator=';')
 
@@ -110,8 +111,6 @@ def train(args):
         y_train = 2.0 * y_train - 1.0
         y_test = 2.0 * y_test - 1.0
         y_val = 2.0 * y_val - 1.0
-
-    # ----------------------------------------------------------------------------------------------------------------------
 
     time_1 = time.time()
     passed = time_1 - start
@@ -206,7 +205,7 @@ def train(args):
         encoded_x_test = encoded_x_test.reshape(test_count, 4, 4)
         encoded_x_val = encoded_x_val.reshape(val_count, 4, 4)
 
-    """AUTOENCODER""" # TO DO: ADD AE FOR VGG16 FALSE?????
+    """AUTOENCODER"""
     if args.preprocessing == 'ae':
         x_train, x_test, x_val = flatten_gray_data(train_features, test_features, val_features, train_count, test_count,
                                                    val_count)
@@ -435,8 +434,6 @@ def train(args):
         print('Please chose a dimensional reduction method! ds, pca, ae, dae')
         return
 
-    # ----------------------------------------------------------------------------------------------------------------------
-
     time_2 = time.time()
     passed = time_2 - time_1
     print('Elapsed time for data compression:', passed)
@@ -499,8 +496,6 @@ def train(args):
         print('Pleaes choose quantum embedding method! basis, angle, no')
         return
 
-    # ----------------------------------------------------------------------------------------------------------------------
-
     time_3 = time.time()
     passed = time_3 - time_2
     print('Elapsed time for quantum embedding:', passed)
@@ -512,6 +507,9 @@ def train(args):
     if args.train_layer == 'grant':
         circuit, readout = create_gvqc(args.observable)
 
+    if args.train_layer == 'new':
+        circuit, readout = create_nvqc(args.observable)
+
     if args.train_layer == 'dense':
         model = tf.keras.Sequential([
             tf.keras.layers.Flatten(input_shape=(4, 4, 1)),
@@ -519,11 +517,11 @@ def train(args):
             tf.keras.layers.Dense(1),
         ])
 
-    if args.train_layer != 'farhi' and args.train_layer != 'grant' and args.train_layer != 'dense':
+    if args.train_layer == None:
         print('Chose a trainig layer! farhi, grant, dense')
         return
 
-    if args.train_layer == 'farhi' or args.train_layer == 'grant':
+    if args.train_layer != 'dense':
         model = tf.keras.Sequential([
             # The input is the data-circuit, encoded as a tf.string
             tf.keras.layers.Input(shape=(), dtype=tf.string),
@@ -562,7 +560,8 @@ def train(args):
             loss=model_loss,
             optimizer=model_optimizer,
             metrics=['accuracy'])
-    if args.train_layer == 'farhi' or args.train_layer == 'grant':
+    #if args.train_layer == 'farhi' or args.train_layer == 'grant':
+    if args.train_layer != 'dense': 
         model.compile(
             loss=model_loss,
             optimizer=model_optimizer,

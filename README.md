@@ -14,6 +14,7 @@ Available preprocessing methods:
 * Deep autoencoder
 * Convolutional autoencoder
 * Autoencoder created from restricted Boltzmann machines
+* TBC
 
 ![Preprocessing pipelines](Images/preprocessingpipeline.png)
 *Figure 1: Preprocessing pipelines*
@@ -21,10 +22,12 @@ Available preprocessing methods:
 Available quantum encodings:
 * Basis encoding
 * Angle encoding
+* TBC
 
 Available quantum circuit architectures:
 * FPQC
 * GPQC
+* TBC
 
 Available loss functions:
 * Hinge loss
@@ -33,6 +36,7 @@ Available loss functions:
 
 Available optimizers:
 * Adam
+* TBC
 
 ## Setup
 Create a directory:
@@ -77,16 +81,10 @@ python train_ovr.py
 * VGG16 [Simonyan et al., 2014](https://arxiv.org/abs/1409.1556v5)
 * EuroSAT [Helber et al., 2019](https://arxiv.org/abs/1709.00029)
 * NWPU-RESISC45 [Cheng et al., 2017](https://arxiv.org/abs/1703.00121)
-
-## TO DO
-* Check TO-DOs im Code
-* default EPOCHS anpassen
-* neue rbm implementierung ohne torch?
-* vgg16 ersetzten mit vgg16wft.py?
-* Quellenangabe für e.g. DAE/RBM
+* RBM Autoencoder implementation adaption [eugenet12, 2020](https://github.com/eugenet12/pytorch-rbm-autoencoder)
  
 ## TBD
-* Add additional optimization methods.
-* Add more preprocessing methods.
-* Add more circuit architectures.
-* Add probability calibrated classifiers
+* New rbmAE implementation with TensorFlow
+* Replace build-in VGG16 with vgg16wFT.py
+* Add: optimization methods, preprocessing methods, circuit architectures
+* Implement probability calibrated classifiers
