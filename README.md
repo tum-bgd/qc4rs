@@ -1,6 +1,6 @@
 # QML4RS
 ### Quantum Machine Learning for Remote Sensing
-Hybrid systems for the classification of satellite imagery. Experiments were performed with EuroSAT and NWPU-RESISC45 data but can also be used for arbitrary datasets with small changes. Pre- and postprocessing are performed classical while a parameterized quantum circuit is used for classification. The hybrid systems use 16 data qubits and the quantum systems are simulated on the GPU.
+Framework for hybrid systems for the classification of satellite imagery. Pre- and postprocessing are performed classical while a parameterized quantum circuit is used for classification. The hybrid systems use 16 data qubits and the quantum systems are simulated on the GPU. Classifications were performed with EuroSAT and NWPU-RESISC45 data but the framework can also be used for arbitrary datasets with small changes.
 
 ![General scheme for hybrid systems](Images/systemscheme.PNG)
 *Figure 1: General scheme for hybrid systems*
@@ -37,6 +37,8 @@ Available loss functions:
 Available optimizers:
 * Adam
 * TBC
+
+The framework can be easily extended with additional preprocessing methods, circuit architectures, etc..
 
 ## Setup
 Create a directory:
@@ -81,7 +83,7 @@ python train_ovr.py
 * VGG16 [Simonyan et al., 2014](https://arxiv.org/abs/1409.1556v5)
 * EuroSAT [Helber et al., 2019](https://arxiv.org/abs/1709.00029)
 * NWPU-RESISC45 [Cheng et al., 2017](https://arxiv.org/abs/1703.00121)
-* RBM Autoencoder implementation adaption [eugenet12, 2020](https://github.com/eugenet12/pytorch-rbm-autoencoder)
+* Original RBM implementation [eugenet12, 2020](https://github.com/eugenet12/pytorch-rbm-autoencoder)
  
 ## TBD
 * New rbmAE implementation with TensorFlow
