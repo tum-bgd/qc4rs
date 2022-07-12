@@ -651,8 +651,5 @@ def train(args):
 
 if __name__ == "__main__":
     args = parse_args()
-
-    try:
-        train(args)
-    except FileExistsError:
-        print('File already exists!')
+    train(args)
+    
