@@ -616,8 +616,4 @@ def train_ovr(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    
-    try:
-        train_ovr(args)
-    except FileExistsError:
-        print('File already exists!')
+    train_ovr(args)
