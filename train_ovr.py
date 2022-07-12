@@ -18,10 +18,10 @@ import tensorflow_quantum as tfq
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 
 from Preprocessing.autoencoderModels import *
-from Circuits.embeddings import basis_embedding, angle_embedding
+from Circuits.embeddings import angle_embedding
 from Circuits.fvqc import create_fvqc
 from Circuits.gvqc import create_gvqc
-from utils import batch_encode_array, unique2D_subarray, hinge_accuracy, flatten_data, seed_everything, binarization, dae_encoding, parse_args, organize_data_ovr
+from utils import batch_encode_array, unique2D_subarray, hinge_accuracy, flatten_data, parse_args, organize_data_ovr
 
 
 def dim_reduc(dataset, train_layer, train_features, test_features, val_features, base_dir, train_count, test_count, val_count): 

@@ -166,6 +166,7 @@ def organize_data_ovr(dataset_name, input_path, classes, split):
 
     print('Train/Test/Val split and directory creation for OvR completed!')
 
+
 def extract_features(dataset, directory, sample_count, image_size, preprocessing, vgg16, batchsize1):
     if dataset == 'eurosat':
         if vgg16 and preprocessing != 'ds':

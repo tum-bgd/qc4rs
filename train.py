@@ -28,7 +28,6 @@ from Preprocessing.autoencoderModels import *
 from Circuits.embeddings import basis_embedding, angle_embedding
 from Circuits.fvqc import create_fvqc
 from Circuits.gvqc import create_gvqc
-from Circuits.nvqc import create_nvqc
 from Preprocessing.dae import DAE
 from Preprocessing.rbm import train_rbm
 from utils import *
@@ -505,9 +504,6 @@ def train(args):
 
     if args.train_layer == 'gvqc':
         circuit, readout = create_gvqc(args.observable)
-
-    if args.train_layer == 'nvqc':
-        circuit, readout = create_nvqc(args.observable)
 
     if args.train_layer != 'dense':
         print(circuit)

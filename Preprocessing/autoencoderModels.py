@@ -3,7 +3,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import layers, losses
 
 
-
 class ConvAutoencoder_256(Model):
     def __init__(self, latent_dim, image_size):
         super(ConvAutoencoder_256, self).__init__()
