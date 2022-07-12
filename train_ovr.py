@@ -446,16 +446,14 @@ def train_ovr(args):
     except FileExistsError:
         print('Log directory exists!')
 
-    log_path = os.path.join('./' + 'logs/RUN_OneVsRest_' + str(args.dataset) + '_' + str(train_layer))
+    log_path = os.path.join('./logs/RUN_OneVsRest_' + str(args.dataset) + '_' + str(train_layer))
 
     k = 0
     try:
         os.mkdir(log_path)
     except FileExistsError:
         while exists(log_path):
-            log_path = os.path.join('./logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
-                                str(args.preprocessing) + '_' + 'vgg16' + str(args.vgg16) + '_' + str(args.embedding) + str(args.embeddingparam) + '_' +
-                                str(args.train_layer) + '_' + str(args.loss) + '_' + str(args.observable) + '_' + str(k))
+            log_path = os.path.join('./logs/RUN_OneVsRest_' + str(args.dataset) + '_' + str(train_layer) + '_' + str(k))
             k+=1
         os.mkdir(log_path)
     sys.stdout = open(log_path + '/output_log.txt', 'w')
@@ -618,11 +616,8 @@ def train_ovr(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    try:
-        os.mkdir('../logs')
-    except FileExistsError:
-        print('Log directory exists!')
+    
     try:
         train_ovr(args)
     except FileExistsError:
-        print('Log file already exists!')
+        print('File already exists!')
