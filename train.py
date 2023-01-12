@@ -24,17 +24,30 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 
 import tensorflow_quantum as tfq
 
-from Preprocessing.autoencoderModels import *
-from Circuits.embeddings import basis_embedding, angle_embedding
-from Circuits.fvqc import create_fvqc
-from Circuits.gvqc import create_gvqc
-from Preprocessing.dae import DAE
-from Preprocessing.rbm import train_rbm
+from preprocessing.autoencoderModels import *
+from circuits.embeddings import basis_embedding, angle_embedding
+
+from circuits.fvqc import create_fvqc
+from circuits.gvqc import create_gvqc
+from circuits.hvqc import create_hvqc
+from circuits.mera import create_mera
+from circuits.mps import create_mps
+from circuits.svqc import create_svqc
+
+from preprocessing.dae import DAE
+from preprocessing.rbm import train_rbm
+
 from utils import *
 
 
 def train(args):
     latent_dim = 16 # equals number of data qubits
+
+    '''
+    TO DO:
+    if args.device is None:
+        args.device = "cuda" if torch.cuda.is_available() else "cpu"
+    '''
 
     if args.dataset == 'eurosat':
         image_size = [64, 64, 3]
@@ -113,6 +126,10 @@ def train(args):
     time_1 = time.time()
     passed = time_1 - start
     print('Elapsed time for preperation:', passed)
+
+    '''
+    Dimensionality reduction
+    '''
 
     """GRAYSCALE"""
     if args.grayscale and args.preprocessing != 'ds':
@@ -442,7 +459,11 @@ def train(args):
     print("Encoded unique arrays: Train", enc_x_train_u.shape, "and: Test", enc_x_test_u.shape, "and: Val",
           enc_x_val_u.shape)
 
-    """QUANTUM EMBEDDING"""
+
+    '''
+    Quantum embedding
+    '''
+
     if args.embedding == 'basis' or args.embedding == 'bin':
         x_train_bin, x_test_bin, x_val_bin = binarization(encoded_x_train, encoded_x_test, encoded_x_val)
 
@@ -484,26 +505,41 @@ def train(args):
         x_test_tfcirc = x_test_bin
         x_val_tfcirc = x_val_bin
 
-    if args.embedding == 'no':
+    if args.embedding == 'none':
         print('No embedding!')
         x_train_tfcirc = encoded_x_train
         x_test_tfcirc = encoded_x_test
         x_val_tfcirc = encoded_x_val
 
     if args.embedding == None:
-        print('Pleaes choose quantum embedding method! basis, angle, no')
+        print('Pleaes choose quantum embedding method! basis, angle, none')
         return
 
     time_3 = time.time()
     passed = time_3 - time_2
     print('Elapsed time for quantum embedding:', passed)
 
-    """MODEL BUILDING"""
-    if args.train_layer == 'fvqc':
+    '''
+    Model building and training
+    '''
+
+    if args.train_layer == 'farhi':
         circuit, readout = create_fvqc(args.observable)
 
     if args.train_layer == 'gvqc':
         circuit, readout = create_gvqc(args.observable)
+
+    if args.train_layer == 'mps':
+        circuit, readout = create_mps(args.observable)
+
+    if args.train_layer == 'mera':
+        circuit, readout = create_mera(args.observable)
+
+    if args.train_layer == 'svqc':
+        circuit, readout = create_svqc(args.observable)
+
+    if args.train_layer == 'hvqc':
+        circuit, readout = create_hvqc(args.observable)
 
     if args.train_layer != 'dense':
         print(circuit)
@@ -516,7 +552,7 @@ def train(args):
         ])
 
     if args.train_layer == None:
-        print('Chose a trainig layer! farhi, grant, dense')
+        print('Chose a trainig layer!')
         return
 
     if args.train_layer != 'dense':
@@ -552,13 +588,13 @@ def train(args):
         print('Chose an optimizer!')
         return
 
-    print('Compiling model .....')
+    print('Compiling model...')
     if args.train_layer == 'dense':
         model.compile(
             loss=model_loss,
             optimizer=model_optimizer,
             metrics=['accuracy'])
-    if args.train_layer != 'dense': 
+    if args.train_layer != 'dense':
         model.compile(
             loss=model_loss,
             optimizer=model_optimizer,
@@ -652,4 +688,3 @@ def train(args):
 if __name__ == "__main__":
     args = parse_args()
     train(args)
-    

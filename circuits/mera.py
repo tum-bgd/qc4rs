@@ -39,7 +39,7 @@ class CircuitLayerBuilder_mera():
         circuit.append(ry(self.data_qubits[qubit]))
 
         
-def create_mera(observable, grid):
+def create_mera(observable, grid=[4,4]):
     data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[1]))  # Number of grid qubits
     readout = data_qubits[10]
     circuit = cirq.Circuit()

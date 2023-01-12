@@ -4,7 +4,9 @@ MPS BASED ON (BASARIM 2020? edit?) Tüsüz et al. Performance of Particle Tracki
 import cirq
 import sympy
 
-
+'''
+LOSS IS 1.0! TO DO: RE-IMPLEMENT!
+'''
 class CircuitLayerBuilder_mps():
     def __init__(self, data_qubits, readout):
         self.data_qubits = data_qubits
@@ -25,8 +27,8 @@ class CircuitLayerBuilder_mps():
 
             
             
-def create_mps(observable, grid):
-    data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[0]))  # 4x4 grid
+def create_mps(observable, grid=[4, 4]):
+    data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[0]))
     readout = data_qubits[-1]
     circuit = cirq.Circuit()
 

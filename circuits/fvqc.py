@@ -1,3 +1,6 @@
+'''
+BASED ON FARHI ET AL: CLASSIFICATION ON NEAR TERM PROCESSORS
+'''
 import cirq
 import sympy
 
@@ -13,8 +16,8 @@ class CircuitLayerBuilder():
             circuit.append(gate(qubit, self.readout)**symbol)
 
 
-def create_fvqc(observable):
-    data_qubits = cirq.GridQubit.rect(4, 4)  # 4x4 grid
+def create_fvqc(observable, grid=[4, 4]):
+    data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[1]))
     readout = cirq.GridQubit(-1, -1)  # Readout qubit at [-1,-1]
     circuit = cirq.Circuit()
 

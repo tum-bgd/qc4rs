@@ -3,7 +3,7 @@ SVQC BASED ON 'CIRCUIT-CENTRIC QUANTUM CLASSIFIERS' BY M. SCHULD
 '''
 import cirq
 import sympy
-
+import math
 
 class CircuitLayerBuilder_svqc():
     def __init__(self, data_qubits, readout):
@@ -33,8 +33,8 @@ class CircuitLayerBuilder_svqc():
             circuit.append(gate(qubits[controls[n-1-i]], qubits[targets[n-1-i]])**symbol)
 
     
-def create_svqc(observable, grid):
-    data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[0]))  # 4x4 grid
+def create_svqc(observable, grid=[4, 4]):
+    data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[0]))
     readout = data_qubits[0]
     circuit = cirq.Circuit()
 

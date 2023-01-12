@@ -356,13 +356,13 @@ def parse_args():
 
     parser.add_argument('-e', '--epochs', type=int, default=30, help='number of training epochs')
 
-    parser.add_argument('-t', '--train_layer', type=str, default='farhi', help='select a training layer. currently available: farhi, grant, dense')
+    parser.add_argument('-t', '--train_layer', type=str, default='mps', help='select a training layer. currently available: farhi, grant, dense')
 
     parser.add_argument('-v', '--vgg16', type=bool, default=True, help='use vgg16 for prior feature extraction True or False')
 
     parser.add_argument('-cp', '--cparam', type=int, default=0, help='cparam. currently has no influence')
 
-    parser.add_argument('-em', '--embedding', type=str, default='angle', help='select quantum encoding for the classical input data. currently available: basis, angle, ( and bin for no quantum embedding but binarization')
+    parser.add_argument('-em', '--embedding', type=str, default='angle', help='select quantum encoding for the classical input data. currently available: basis, angle, and bin for no quantum embedding but binarization')
 
     parser.add_argument('-emp', '--embeddingparam', type=str, default='x', help='select axis for angle embedding')
 

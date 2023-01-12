@@ -1,3 +1,6 @@
+'''
+BASED ON GRANT: HIRACHICAL QUANTUM CLASSIFIERS
+'''
 import cirq
 import sympy
 
@@ -43,8 +46,8 @@ class CircuitLayerBuilder():
                 j += 3
 
 
-def create_gvqc(observable):
-    data_qubits = cirq.GridQubit.rect(4, 4)  # 4x4 grid
+def create_gvqc(observable, grid=[4, 4]):
+    data_qubits = cirq.GridQubit.rect(int(grid[0]), int(grid[1]))
     readout = data_qubits[10]
 
     circuit = cirq.Circuit()
