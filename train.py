@@ -5,7 +5,6 @@ from os.path import exists
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-import cv2
 import multiprocessing
 
 import torch
@@ -28,6 +27,8 @@ from Preprocessing.autoencoderModels import *
 from Circuits.embeddings import basis_embedding, angle_embedding
 from Circuits.fvqc import create_fvqc
 from Circuits.gvqc import create_gvqc
+from Circuits.mera import create_mera
+from Circuits.svqc import create_svqc
 from Preprocessing.dae import DAE
 from Preprocessing.rbm import train_rbm
 from utils import *
@@ -35,6 +36,9 @@ from utils import *
 
 def train(args):
     latent_dim = 16 # equals number of data qubits
+    
+    if args.device is None:
+        args.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     if args.dataset == 'eurosat':
         image_size = [64, 64, 3]
@@ -123,15 +127,15 @@ def train(args):
 
         k = 0
         for img in train_features:
-            x_train.append(cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY))
+            x_train.append(0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2]))
             k += 1
         k = 0
         for img in test_features:
-            x_test.append(cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY))
+            x_test.append(0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2]))
             k += 1
         k = 0
         for img in val_features:
-            x_val.append(cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY))
+            x_val.append(0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2]))
             k += 1
 
         train_features = np.asarray(x_train)
@@ -153,15 +157,15 @@ def train(args):
 
         k = 0
         for img in train_features:
-            x_train[k] = cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY)
+            x_train[k] = 0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2])
             k += 1
         k = 0
         for img in test_features:
-            x_test[k] = cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY)
+            x_test[k] = 0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2])
             k += 1
         k = 0
         for img in val_features:
-            x_val[k] = cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY)
+            x_val[k] = 0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2])
             k += 1
 
         # Downsampling
@@ -504,6 +508,12 @@ def train(args):
 
     if args.train_layer == 'gvqc':
         circuit, readout = create_gvqc(args.observable)
+
+    if args.train_layer == 'mera':
+        circuit, readout = create_mera(args.observable)
+
+    if args.train_layer == 'svqc':
+        circuit, readout = create_svqc(args.observable)
 
     if args.train_layer != 'dense':
         print(circuit)
