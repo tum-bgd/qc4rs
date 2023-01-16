@@ -1,0 +1,14 @@
+pandas
+absl-py
+six
+numpy
+matplotlib
+opencv-python
+typing-extensions
+protobuf
+tensorflow-quantum
+scikit-image
+scikit-learn
+cirq
+sympy
+scipy

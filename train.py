@@ -1,76 +1,94 @@
+'''
+TO DO:
+1
+Set up new docker container with upgraded tensorflow and pennylane
+    - get tensorflow docker image, install pennylane, then check dependencies
+    - get gpu support with qulacs
+    - run test script for validation
+
+2
+Implement circuits with pennylane (thus get rid of tfq and cirq)
+
+3
+Implement rbmAE with tensorflow and get rid of torch
+
+4
+Check what other packages can be deleted
+
+5
+update logging
+'''
+# Standard python librarys
 import os
 import sys
-from os.path import exists
-
-import numpy as np
 import time
-import matplotlib.pyplot as plt
-import cv2
 import multiprocessing
+import numpy as np
+import matplotlib.pyplot as plt
 
-import torch
-from torch.utils.data import DataLoader, TensorDataset
-import torch.nn as nn
-import torch.optim as optim
-
+# Core librarys
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.callbacks import CSVLogger
+
+from tensorflow.keras.callbacks import CSVLogger # this may be removed
 
 from skimage.transform import downscale_local_mean
 from sklearn.decomposition import PCA, FactorAnalysis
-
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-import tensorflow_quantum as tfq
+import tensorflow_quantum as tfq # this will be removed and replaced by pennylane
 
-from preprocessing.autoencoderModels import *
-from circuits.embeddings import basis_embedding, angle_embedding
-
-from circuits.fvqc import create_fvqc
-from circuits.gvqc import create_gvqc
-from circuits.hvqc import create_hvqc
-from circuits.mera import create_mera
-from circuits.mps import create_mps
-from circuits.svqc import create_svqc
-
-from preprocessing.dae import DAE
-from preprocessing.rbm import train_rbm
-
+import preprocessing
+#from preprocessing.autoencoderModels import *
+#from preprocessing.dae import DAE
+#from preprocessing.rbm import train_rbm
+import circuits
 from utils import *
 
 
-def train(args):
+def train(**kwargs):
+
+    # name = kwargs['name']['value']
+    ds = kwargs['dataset']['value']
+    ds_path = kwargs['dataset_path']['value']
+    im_num = kwargs['image_num']['value']
+    im_size = kwargs['image_size']['value']
+    c1, c2 = kwargs['classes']['value']
+    gray = kwargs['grayscale']['value']
+    pp = kwargs['preprocessing']['value']
+    vgg = kwargs['vgg16']['value']
+    bs_pp = kwargs['batchsize_pre']['value']
+    # epochs_pp = kwargs['epochs_pre']['value']
+    train_layer = kwargs['train_layer']['value']
+    emb = kwargs['embedding']['value']
+    emb_param = kwargs['embedding_param']['value']
+    obs = kwargs['observable']['value']
+    bs_train = kwargs['batchsize_train']['value']
+    epochs_train = kwargs['epochs_train']['value']
+    loss = kwargs['loss']['value']
+    # metric = kwargs['metric']['value']
+    optim = kwargs['optimizer']['value']
+    # optim_lr = kwargs['optimizer_lr']['value']
+    device = kwargs['device']['value']
+    if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
     latent_dim = 16 # equals number of data qubits
 
     '''
-    TO DO:
-    if args.device is None:
-        args.device = "cuda" if torch.cuda.is_available() else "cpu"
+    Logging
     '''
-
-    if args.dataset == 'eurosat':
-        image_size = [64, 64, 3]
-
-    if args.dataset == 'resisc45':
-        image_size = [256, 256, 3]
-
     try:
         os.mkdir('./logs')
     except FileExistsError:
         print('Log directory exists!')
 
-    log_path = os.path.join('./logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
-                            str(args.preprocessing) + '_' + 'vgg16' + str(args.vgg16) + '_' + str(args.embedding) + str(args.embeddingparam) + '_' +
-                            str(args.train_layer) + '_' + str(args.loss) + '_' + str(args.observable))
+    log_path = os.path.join('./logs/RUN_' + str(ds) + '_' + str(c1) + 'vs' + str(c2) + '_' + str(pp) + '_' + 'vgg16' + str(vgg) + '_' + str(emb) + str(emb_param) + '_' + str(train_layer) + '_' + str(loss) + '_' + str(obs))
     k = 0
     try:
         os.mkdir(log_path)
     except FileExistsError:
-        while exists(log_path):
-            log_path = os.path.join('./logs/RUN_' + str(args.dataset) + '_' + str(args.class1) + 'vs' + str(args.class2) + '_' +
-                                str(args.preprocessing) + '_' + 'vgg16' + str(args.vgg16) + '_' + str(args.embedding) + str(args.embeddingparam) + '_' +
-                                str(args.train_layer) + '_' + str(args.loss) + '_' + str(args.observable) + '_' + str(k))
+        while os.path.exists(log_path):
+            log_path = os.path.join('./logs/RUN_' + str(ds) + '_' + str(c1) + 'vs' + str(c2) + '_' + str(pp) + '_' + 'vgg16' + str(vgg) + '_' + str(emb) + str(emb_param) + '_' + str(train_layer) + '_' + str(loss) + '_' + str(obs) + '_' + str(k))
             k+=1
         os.mkdir(log_path)
 
@@ -80,26 +98,26 @@ def train(args):
     start = time.time()
     print('OA timer started at:', start)
 
-    organize_data(dataset_name=args.dataset, input_path=args.dataset_path, classes=[args.class1, args.class2], split=int(0.3*args.image_count))
+    organize_data(dataset_name=ds, input_path=ds_path, classes=[c1, c2], split=int(0.3*im_num))
 
-    base_dir = './' + '../' + args.dataset + '_data_' + args.class1 + '_' + args.class2
+    base_dir = './' + '../' + ds + '_data_' + c1 + '_' + c2
     train_dir = os.path.join(base_dir, 'train')
     test_dir = os.path.join(base_dir, 'test')
     val_dir = os.path.join(base_dir, 'valid')
 
-    train_count = args.image_count + args.image_count - int(0.6*args.image_count)
-    test_count = int(0.3*args.image_count)
+    train_count = im_num * 2 - int(0.6*im_num)
+    test_count = int(0.3 * im_num)
     val_count = test_count
 
-    train_features, train_labels = extract_features(args.dataset, train_dir, train_count, image_size, args.preprocessing, args.vgg16, args.batchsize1)
-    test_features, test_labels = extract_features(args.dataset, test_dir, test_count, image_size, args.preprocessing, args.vgg16, args.batchsize1)
-    val_features, val_labels = extract_features(args.dataset, val_dir, val_count, image_size, args.preprocessing, args.vgg16, args.batchsize1)
+    train_features, train_labels = extract_features(ds, train_dir, train_count, im_size, pp, vgg, bs_pp)
+    test_features, test_labels = extract_features(ds, test_dir, test_count, im_size, pp, vgg, bs_pp)
+    val_features, val_labels = extract_features(ds, val_dir, val_count, im_size, pp, vgg, bs_pp)
 
-    print('Total Number of ' + str(args.class1) + ' and ' + str(args.class2) + ' TRAIN images is:' +
+    print('Total Number of ' + str(c1) + ' and ' + str(c2) + ' TRAIN images is:' +
           str(len(train_features)))
-    print('Total Number of ' + str(args.class1) + ' and ' + str(args.class2) + ' TEST images is:' +
+    print('Total Number of ' + str(c1) + ' and ' + str(c2) + ' TEST images is:' +
           str(len(test_features)))
-    print('Total Number of ' + str(args.class1) + ' and ' + str(args.class2) + ' VALIDATION images is:' +
+    print('Total Number of ' + str(c1) + ' and ' + str(c2) + ' VALIDATION images is:' +
           str(len(val_features)))
 
     r, c = train_labels.shape
@@ -117,7 +135,7 @@ def train(args):
 
     print('Label ok?:' + str(y_train[0]) + 'and' + str(y_train[1]) + 'and' + str(y_train[2]) + 'and' + str(y_train[3]))
 
-    if args.loss == 'hinge' or args.loss == 'squarehinge':
+    if loss == 'hinge' or loss == 'squarehinge':
         # convert labels from 1, 0 to 1, -1
         y_train = 2.0 * y_train - 1.0
         y_test = 2.0 * y_test - 1.0
@@ -132,7 +150,7 @@ def train(args):
     '''
 
     """GRAYSCALE"""
-    if args.grayscale and args.preprocessing != 'ds':
+    if gray and pp != 'ds':
         print('Images BRG2GRAY')
         x_train = []
         x_test = []
@@ -140,15 +158,15 @@ def train(args):
 
         k = 0
         for img in train_features:
-            x_train.append(cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY))
+            x_train.append(0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2]))
             k += 1
         k = 0
         for img in test_features:
-            x_test.append(cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY))
+            x_test.append(0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2]))
             k += 1
         k = 0
         for img in val_features:
-            x_val.append(cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY))
+            x_val.append(0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2]))
             k += 1
 
         train_features = np.asarray(x_train)
@@ -156,7 +174,7 @@ def train(args):
         val_features = np.asarray(x_val)
 
     """DOWNSAMPLING"""
-    if args.preprocessing == 'ds':
+    if pp == 'ds':
         print('Starting dimensional reduction with downsampling!')
 
         # convert to single illuminance channel
@@ -170,20 +188,20 @@ def train(args):
 
         k = 0
         for img in train_features:
-            x_train[k] = cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY)
+            x_train[k] = 0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2])
             k += 1
         k = 0
         for img in test_features:
-            x_test[k] = cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY)
+            x_test[k] = 0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2])
             k += 1
         k = 0
         for img in val_features:
-            x_val[k] = cv2.cvtColor(np.float32(img), cv2.COLOR_RGB2GRAY)
+            x_val[k] = 0.2125 * np.float32(img[:,:,0]) + 0.7154 * np.float32(img[:,:,1]) + 0.0721 * np.float32(img[:,:,2])
             k += 1
 
         # Downsampling
         # https://scikit-image.org/docs/dev/auto_examples/transform/plot_rescale.html
-        ds_param = int(image_size[0] / 4)
+        ds_param = int(im_size[0] / 4)
 
         encoded_x_train = np.zeros((train_count, 4, 4))
         i = 0
@@ -202,7 +220,7 @@ def train(args):
             i += 1
 
     """PRINCIPAL COMPONENT ANALYSIS"""
-    if args.preprocessing == 'pca':
+    if pp == 'pca':
         print('Starting dimensional reduction with PCA!')
 
         x_train, x_test, x_val = flatten_data(train_features, test_features, val_features, train_count, test_count,
@@ -221,11 +239,11 @@ def train(args):
         encoded_x_val = encoded_x_val.reshape(val_count, 4, 4)
 
     """AUTOENCODER"""
-    if args.preprocessing == 'ae':
+    if pp == 'ae':
         x_train, x_test, x_val = flatten_gray_data(train_features, test_features, val_features, train_count, test_count,
                                                    val_count)
 
-        autoencoder = SimpleAutoencoder_64(latent_dim)
+        autoencoder = preprocessing.autoencoderModels.SimpleAutoencoder_64(latent_dim)
 
         autoencoder.compile(optimizer='adam', loss=keras.losses.MeanSquaredError())
         autoencoder.fit(x_train, x_train,
@@ -243,21 +261,21 @@ def train(args):
         encoded_x_test = encoded_x_test_.reshape(test_count, 4, 4)
         encoded_x_val = encoded_x_val_.reshape(val_count, 4, 4)
 
-    if args.preprocessing == 'dae':
-        if args.vgg16:
+    if pp == 'dae':
+        if vgg:
             print('Starting dimensional reduction with VGG16 and autoencoder!')
 
-            if args.dataset == 'eurosat':
+            if ds == 'eurosat':
                 x_train, x_test, x_val = flatten_data(train_features, test_features, val_features, train_count,
                                                       test_count,
                                                       val_count)
-                autoencoder = DeepAutoencoder_64(latent_dim)
+                autoencoder = preprocessing.autoencoderModels.DeepAutoencoder_64(latent_dim)
 
-            if args.dataset == 'resisc45':
+            if ds == 'resisc45':
                 x_train, x_test, x_val = flatten_data(train_features, test_features, val_features, train_count,
                                                       test_count,
                                                       val_count)
-                autoencoder = SimpleAutoencoder_256(latent_dim)
+                autoencoder = preprocessing.autoencoderModels.SimpleAutoencoder_256(latent_dim)
 
             autoencoder.compile(optimizer='adam', loss=keras.losses.MeanSquaredError())
             autoencoder.fit(x_train, x_train,
@@ -271,26 +289,26 @@ def train(args):
             encoded_x_test_ = autoencoder.encoder(x_test).numpy()
             encoded_x_val_ = autoencoder.encoder(x_val).numpy()
 
-        if not args.vgg16:
+        if not vgg:
             print('Starting dimensional reduction with convolutional autoencoder!')
 
-            x_train = train_features.reshape(-1, image_size[0], image_size[1], image_size[2])
-            x_test = test_features.reshape(-1, image_size[0], image_size[1], image_size[2])
-            x_val = val_features.reshape(-1, image_size[0], image_size[1], image_size[2])
+            x_train = train_features.reshape(-1, im_size[0], im_size[1], im_size[2])
+            x_test = test_features.reshape(-1, im_size[0], im_size[1], im_size[2])
+            x_val = val_features.reshape(-1, im_size[0], im_size[1], im_size[2])
 
-            if image_size[0] == 256:
-                autoencoder = ConvAutoencoder_256(latent_dim, image_size)
+            if im_size[0] == 256:
+                autoencoder = preprocessing.autoencoderModels.ConvAutoencoder_256(latent_dim, im_size)
 
-            if image_size[0] == 64:
-                autoencoder = ConvAutoencoder_64(latent_dim, image_size)
+            if im_size[0] == 64:
+                autoencoder = preprocessing.autoencoderModels.ConvAutoencoder_64(latent_dim, im_size)
 
-            if image_size[0] != 256 and image_size[0] != 64:
-                print('No matching autoencoder for image size' + str(image_size[0]) + 'found!')
+            if im_size[0] != 256 and im_size[0] != 64:
+                print('No matching autoencoder for image size' + str(im_size[0]) + 'found!')
 
             autoencoder.compile(optimizer='adam', loss=keras.losses.MeanSquaredError())
 
             autoencoder.fit(x_train, x_train,
-                            batch_size=args.batchsize1,
+                            batch_size=bs_pp,
                             epochs=10,
                             shuffle=True,
                             validation_data=(x_test, x_test),
@@ -305,129 +323,11 @@ def train(args):
         encoded_x_test = encoded_x_test_.reshape(test_count, 4, 4)
         encoded_x_val = encoded_x_val_.reshape(val_count, 4, 4)
 
-    """RBM AUTOENCODER"""
-    if args.preprocessing == 'rbmae':
-        print('Starting dimensional reduction with deep autoencoder!')
+    '''
+    Here was the RBM Autoencoder model before TO DO: IMPLEMENT NEW ONE
+    '''
 
-        seed_everything(42)
-
-        if args.vgg16 and args.dataset == 'eurosat':
-            num = 2 * 2 * 512
-        if args.vgg16 and args.dataset == 'resisc45':
-            num = 8 * 8 * 512
-        if not args.vgg16:
-            if not args.grayscale:
-                num = image_size[0] * image_size[1] * image_size[2]  # Number of values: e.g. 64x64x3
-            if args.grayscale:
-                num = image_size[0] * image_size[1]  # Number of values: e.g. 64x64
-
-        if args.grayscale:
-            x_train, x_test, x_val = flatten_gray_data(train_features, test_features, val_features, train_count,
-                                                       test_count,
-                                                       val_count)
-        if not args.grayscale:
-            x_train, x_test, x_val = flatten_data(train_features, test_features, val_features, train_count, test_count,
-                                                  val_count)
-        x_train_binary, x_test_binary, x_val_binary = binarization(x_train, x_test, x_val)
-
-        train_dl = DataLoader(
-            TensorDataset(torch.Tensor(x_train_binary).to(args.device)),
-            batch_size=args.batchsize1,
-            shuffle=False
-        )
-
-        hidden_dimensions = [
-            {
-                "hidden_dim": 1000,
-                "num_epochs": 10,
-                "learning_rate": 0.1,
-                "use_gaussian": False
-            },
-            {
-                "hidden_dim": 500,
-                "num_epochs": 10,
-                "learning_rate": 0.1,
-                "use_gaussian": False
-            },
-            {
-                "hidden_dim": 250,
-                "num_epochs": 10,
-                "learning_rate": 0.1,
-                "use_gaussian": False
-            },
-            {
-                "hidden_dim": 16,
-                "num_epochs": 30,
-                "learning_rate": 0.001,  # Use much lower LR for gaussian to avoid exploding gradient
-                "use_gaussian": True
-                # Use a Gaussian distribution for the last hidden layer to let it take advantage of continuous values
-            }
-        ]
-
-        # get initial iteration of new training dl
-        new_train_dl = train_dl
-        visible_dim = num
-        hidden_dim = None
-        models = []  # trained RBM models
-        for configs in hidden_dimensions:
-
-            # parse configs
-            hidden_dim = configs["hidden_dim"]
-            num_epochs = configs["num_epochs"]
-            lr = configs["learning_rate"]
-            use_gaussian = configs["use_gaussian"]
-
-            # train RBM
-            # print(f"{visible_dim} to {hidden_dim}")
-            print(str(visible_dim) + ' to ' + str(hidden_dim))
-            model, v, v_pred = train_rbm(new_train_dl, visible_dim, hidden_dim, k=1, num_epochs=num_epochs, lr=lr,
-                                         use_gaussian=use_gaussian)
-            models.append(model)
-
-            # rederive new data loader based on hidden activations of trained model
-            new_data = []
-            for data_list in new_train_dl:
-                p = model.sample_h(data_list[0])[0]
-                new_data.append(p.detach().cpu().numpy())
-            new_input = np.concatenate(new_data)
-            new_train_dl = DataLoader(
-                TensorDataset(torch.Tensor(new_input).to(args.device)),
-                batch_size=args.batchsize1,
-                shuffle=False
-            )
-
-            # update new visible_dim for next RBM
-            visible_dim = hidden_dim
-
-        # FINE TUNE AUTOENCODER
-        lr = 1e-3
-        dae = DAE(models).to(args.device)
-        dae_loss = nn.MSELoss()
-        optimizer = optim.Adam(dae.parameters(), lr)
-        num_epochs = 50
-
-        encoded = []
-        # train
-        for epoch in range(num_epochs):
-            losses = []
-            for i, data_list in enumerate(train_dl):
-                data = data_list[0]
-                v_pred, v_encode = dae(data)
-                encoded.append(v_encode)
-                batch_loss = dae_loss(data, v_pred)  # difference between actual and reconstructed
-                losses.append(batch_loss.item())
-                optimizer.zero_grad()
-                batch_loss.backward()
-                optimizer.step()
-            running_loss = np.mean(losses)
-            print('Epoch', epoch, ':', running_loss)
-
-        # ENCODE DATA
-        encoded_x_train = dae_encoding(x_train_binary, dae, args.device)
-        encoded_x_test = dae_encoding(x_test_binary, dae, args.device)
-        encoded_x_val = dae_encoding(x_val_binary, dae, args.device)
-
-    if args.preprocessing == 'fa':
+    if pp == 'fa':
         print('Starting dimensional reduction with FACTOR ANALYSIS!')
 
         x_train, x_test, x_val = flatten_data(train_features, test_features, val_features, train_count, test_count,
@@ -445,7 +345,7 @@ def train(args):
         encoded_x_test = encoded_x_test.reshape(test_count, 4, 4)
         encoded_x_val = encoded_x_val.reshape(val_count, 4, 4)
 
-    if args.preprocessing == None:
+    if pp == None:
         print('Please chose a dimensional reduction method! ds, pca, ae, dae')
         return
 
@@ -464,7 +364,7 @@ def train(args):
     Quantum embedding
     '''
 
-    if args.embedding == 'basis' or args.embedding == 'bin':
+    if emb == 'basis' or emb == 'bin':
         x_train_bin, x_test_bin, x_val_bin = binarization(encoded_x_train, encoded_x_test, encoded_x_val)
 
         """CHECK HOW MANY UNIQUE ARRAYS ARE LEFT AFTER ENCODING"""
@@ -474,17 +374,17 @@ def train(args):
         print("Unique arrays after thresholding: Train", x_train_u.shape, "and: Test", x_test_u.shape, "and: Val",
               x_val_u.shape)
 
-    if args.embedding == 'basis':
+    if emb == 'basis':
         print('Basis embedding!')
-        x_train_circ = [basis_embedding(x) for x in x_train_bin]
-        x_test_circ = [basis_embedding(x) for x in x_test_bin]
-        x_val_circ = [basis_embedding(x) for x in x_val_bin]
+        x_train_circ = [circuits.embeddings.basis_embedding(x) for x in x_train_bin]
+        x_test_circ = [circuits.embeddings.basis_embedding(x) for x in x_test_bin]
+        x_val_circ = [circuits.embeddings.basis_embedding(x) for x in x_val_bin]
         x_train_tfcirc = tfq.convert_to_tensor(x_train_circ)
         x_test_tfcirc = tfq.convert_to_tensor(x_test_circ)
         x_val_tfcirc = tfq.convert_to_tensor(x_val_circ)
 
-    if args.embedding == 'angle':
-        print(args.embeddingparam, 'Angle embedding!')
+    if emb == 'angle':
+        print(emb_param, 'Angle embedding!')
         train_maximum = np.max(np.abs(encoded_x_train))
         test_maximum = np.max(np.abs(encoded_x_test))
         val_maximum = np.max(np.abs(encoded_x_val))
@@ -492,26 +392,26 @@ def train(args):
         x_test_norm = encoded_x_test / test_maximum
         x_val_norm = encoded_x_val / val_maximum
 
-        x_train_circ = [angle_embedding(x, args.embeddingparam) for x in x_train_norm]
-        x_test_circ = [angle_embedding(x, args.embeddingparam) for x in x_test_norm]
-        x_val_circ = [angle_embedding(x, args.embeddingparam) for x in x_val_norm]
+        x_train_circ = [circuits.embeddings.angle_embedding(x, emb_param) for x in x_train_norm]
+        x_test_circ = [circuits.embeddings.angle_embedding(x, emb_param) for x in x_test_norm]
+        x_val_circ = [circuits.embeddings.angle_embedding(x, emb_param) for x in x_val_norm]
         x_train_tfcirc = tfq.convert_to_tensor(x_train_circ)
         x_test_tfcirc = tfq.convert_to_tensor(x_test_circ)
         x_val_tfcirc = tfq.convert_to_tensor(x_val_circ)
 
-    if args.embedding == 'bin':
+    if emb == 'bin':
         print('No embedding!')
         x_train_tfcirc = x_train_bin
         x_test_tfcirc = x_test_bin
         x_val_tfcirc = x_val_bin
 
-    if args.embedding == 'none':
+    if emb == 'none':
         print('No embedding!')
         x_train_tfcirc = encoded_x_train
         x_test_tfcirc = encoded_x_test
         x_val_tfcirc = encoded_x_val
 
-    if args.embedding == None:
+    if emb == None:
         print('Pleaes choose quantum embedding method! basis, angle, none')
         return
 
@@ -523,39 +423,40 @@ def train(args):
     Model building and training
     '''
 
-    if args.train_layer == 'farhi':
-        circuit, readout = create_fvqc(args.observable)
 
-    if args.train_layer == 'gvqc':
-        circuit, readout = create_gvqc(args.observable)
+    if train_layer == 'fvqc':
+        circuit, readout = circuits.fvqc.create_fvqc(obs)
 
-    if args.train_layer == 'mps':
-        circuit, readout = create_mps(args.observable)
+    if train_layer == 'gvqc':
+        circuit, readout = circuits.gvqc.create_gvqc(obs)
 
-    if args.train_layer == 'mera':
-        circuit, readout = create_mera(args.observable)
+    if train_layer == 'mps':
+        circuit, readout = circuits.mps.create_mps(obs)
 
-    if args.train_layer == 'svqc':
-        circuit, readout = create_svqc(args.observable)
+    if train_layer == 'mera':
+        circuit, readout = circuits.mera.create_mera(obs)
 
-    if args.train_layer == 'hvqc':
-        circuit, readout = create_hvqc(args.observable)
+    if train_layer == 'svqc':
+        circuit, readout = circuits.svqc.create_svqc(obs)
 
-    if args.train_layer != 'dense':
+    if train_layer == 'hvqc':
+        circuit, readout = circuits.hvqc.create_hvqc(obs)
+
+    if train_layer != 'dense':
         print(circuit)
 
-    if args.train_layer == 'dense':
+    if train_layer == 'dense':
         model = tf.keras.Sequential([
             tf.keras.layers.Flatten(input_shape=(4, 4, 1)),
             tf.keras.layers.Dense(2, activation='relu'),
             tf.keras.layers.Dense(1),
         ])
 
-    if args.train_layer == None:
+    if train_layer == None:
         print('Chose a trainig layer!')
         return
 
-    if args.train_layer != 'dense':
+    if train_layer != 'dense':
         model = tf.keras.Sequential([
             # The input is the data-circuit, encoded as a tf.string
             tf.keras.layers.Input(shape=(), dtype=tf.string),
@@ -563,38 +464,38 @@ def train(args):
             tfq.layers.PQC(circuit, readout),
         ])
 
-    if args.loss == 'hinge':
+    if loss == 'hinge':
         print('Hinge loss selected!')
         model_loss = tf.keras.losses.Hinge()
 
-    if args.loss == 'squarehinge':
+    if loss == 'squarehinge':
         print('Square hinge loss selected!')
         model_loss = tf.keras.losses.SquaredHinge()
 
-    if args.loss == 'crossentropy':
+    if loss == 'crossentropy':
         model_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, label_smoothing=0.0)
 
-    if args.loss == None:
+    if loss == None:
         print('Chose a loss function! hinge, squarehinge')
         return
 
-    if args.optimizer == 'adam':
+    if optim == 'adam':
         model_optimizer = tf.keras.optimizers.Adam()
 
-    if args.optimizer == 'bobyqa':
+    if optim == 'bobyqa':
         model_optimizer = 0
 
-    if args.optimizer == None:
+    if optim == None:
         print('Chose an optimizer!')
         return
 
     print('Compiling model...')
-    if args.train_layer == 'dense':
+    if train_layer == 'dense':
         model.compile(
             loss=model_loss,
             optimizer=model_optimizer,
             metrics=['accuracy'])
-    if args.train_layer != 'dense':
+    if train_layer != 'dense':
         model.compile(
             loss=model_loss,
             optimizer=model_optimizer,
@@ -602,8 +503,8 @@ def train(args):
 
     qnn_history = model.fit(
         x_train_tfcirc, y_train,
-        batch_size=args.batchsize2,
-        epochs=args.epochs,
+        batch_size=bs_train,
+        epochs=epochs_train,
         verbose=1,
         validation_data=(x_test_tfcirc, y_test),
         callbacks=[csv_logger])
@@ -621,7 +522,7 @@ def train(args):
     print('Model evaluated!')
 
     # save figures for accuracy and loss
-    if args.train_layer != 'dense':
+    if train_layer != 'dense':
         plt.figure(figsize=(10, 5))
         plt.plot(qnn_history.history['hinge_accuracy'], label='Accuracy')
         plt.plot(qnn_history.history['val_hinge_accuracy'], label='Val Accuracy')
@@ -630,7 +531,7 @@ def train(args):
         plt.legend()
         plt.savefig(log_path + '/acc.png')
 
-    if args.train_layer == 'dense':
+    if train_layer == 'dense':
         plt.figure(figsize=(10, 5))
         plt.plot(qnn_history.history['accuracy'], label='nn accuracy')
         plt.plot(qnn_history.history['val_accuracy'], label='nn val_accuracy')
@@ -654,7 +555,7 @@ def train(args):
     y_true = y_val
     y_pred = model.predict(x_val_tfcirc)
 
-    if args.loss == 'hinge' or args.loss == 'squarehinge':
+    if loss == 'hinge' or loss == 'squarehinge':
         # Hinge labels to 0,1
         y_true = (y_true + 1) / 2
         y_pred = (np.array(y_pred) + 1) / 2
@@ -664,7 +565,7 @@ def train(args):
         for i in range(0, len(y_pred)):
             y_pred_int.append(round(y_pred[i][0]))
 
-    if args.loss == 'crossentropy':
+    if loss == 'crossentropy':
         y_true = tf.squeeze(y_true) > 0.5
         y_pred_int = tf.squeeze(y_pred) > 0.5
 
@@ -676,15 +577,10 @@ def train(args):
     recall_1 = recall_score(y_true, y_pred_int, pos_label=1, average='binary')
     f1_1 = f1_score(y_true, y_pred_int, pos_label=1, average='binary')
 
-    print('Precision for class ', args.class1, ' is: ', precision_0)
-    print('Recall for class ', args.class1, ' is: ', recall_0)
-    print('F1 for class ', args.class1, ' is: ', f1_0)
+    print('Precision for class ', c1, ' is: ', precision_0)
+    print('Recall for class ', c1, ' is: ', recall_0)
+    print('F1 for class ', c1, ' is: ', f1_0)
 
-    print('Precision for class ', args.class2, ' is: ', precision_1)
-    print('Recall for class ', args.class2, ' is: ', recall_1)
-    print('F1 for class ', args.class2, ' is: ', f1_1)
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    train(args)
+    print('Precision for class ', c2, ' is: ', precision_1)
+    print('Recall for class ', c2, ' is: ', recall_1)
+    print('F1 for class ', c2, ' is: ', f1_1)

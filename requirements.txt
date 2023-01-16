@@ -3,8 +3,6 @@ absl-py==0.11.0
 six==1.15
 numpy==1.19.2
 matplotlib==3.3.3
-opencv-python==4.5.5.62
-torch==1.10.2
 tensorflow-estimator==2.4.0
 typing-extensions==3.7.4
 protobuf==3.13.0

@@ -17,7 +17,7 @@
     "batchsize_train": {"value": 32, "info": "batch size for training"},
     "epochs_train": {"value": 30, "info": "number of epochs for training"},
     "loss": {"value": "squarehinge", "info": "select loss function. currently available: hinge, squarehinge, crossentropy"},
-    "metrics": {"value": "accuracy", "info": "currently no effect"},
+    "metric": {"value": "accuracy", "info": "currently no effect"},
     "optimizer": {"value": "adam", "info": "select optimizer. currently available: adam"},
     "optimizer_lr": {"value": 0, "info": "currently no effect"},
     "device": {"value": "cuda", "info": "torch.Device. either cpu or cuda. default will check by torch.cuda.is_available() "}

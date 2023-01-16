@@ -1,14 +1,11 @@
 import os
-import random
 import numpy as np
-import pandas as pd
-import torch
+import pandas as pd # can this also be done without pandas?
 import shutil
 from pathlib import Path
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.vgg16 import VGG16
-import argparse
 
 
 def organize_data(dataset_name, input_path, classes, split):
@@ -291,25 +288,6 @@ def flatten_gray_data(train_features, test_features, val_features, train_count, 
     return x_train, x_test, x_val
 
 
-def seed_everything(seed=42):
-    """Seed everything to make the code more reproducable.
-
-    This code is the same as that found from many public Kaggle kernels.
-
-    Parameters
-    ----------
-    seed: int
-        seed value to ues
-
-    """
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-
-
 def binarization(encoded_x_train, encoded_x_test, encoded_x_val):
     print('Binarization if inputs...')
     unique_tmp = np.unique(encoded_x_train)
@@ -321,66 +299,3 @@ def binarization(encoded_x_train, encoded_x_test, encoded_x_val):
     x_val_bin = np.array(encoded_x_val > th, dtype=np.float32)
 
     return x_train_bin, x_test_bin, x_val_bin
-
-
-def dae_encoding(x_binary, dae, device):
-    encoded_x = []
-    len_input = len(x_binary)
-    input_test = torch.Tensor(x_binary[0:len_input]).to(device)
-
-    transformed, tmp = dae.encode(input_test)
-
-    for i in range(0, len(transformed)):
-        encoded_x.append(transformed[i].detach().cpu().numpy())
-    encoded_x = np.array(encoded_x).reshape(len_input, 4, 4)
-
-    return encoded_x
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Train and evaluate a hybrid classical-quantum system')
-
-    parser.add_argument('-da', '--dataset', type=str, default='eurosat', help='select dataset. currently available: eurosat, resisc45')
-
-    parser.add_argument('-dp', '--dataset_path', type=str, default='../2750', help='select dataset path')
-
-    parser.add_argument('-c1', '--class1', type=str, default='AnnualCrop', help='select a class for binary classification')
-
-    parser.add_argument('-c2', '--class2', type=str, default='SeaLake', help='select a class for binary classification')
-
-    parser.add_argument('-ic', '--image_count', type=int, default=3000, help='define number of images')
-
-    parser.add_argument('-b1', '--batchsize1', type=int, default=32, help='batch size for preprocessing')
-
-    parser.add_argument('-b2', '--batchsize2', type=int, default=32, help='batch size for training')
-
-    parser.add_argument('-e', '--epochs', type=int, default=30, help='number of training epochs')
-
-    parser.add_argument('-t', '--train_layer', type=str, default='mps', help='select a training layer. currently available: farhi, grant, dense')
-
-    parser.add_argument('-v', '--vgg16', type=bool, default=True, help='use vgg16 for prior feature extraction True or False')
-
-    parser.add_argument('-cp', '--cparam', type=int, default=0, help='cparam. currently has no influence')
-
-    parser.add_argument('-em', '--embedding', type=str, default='angle', help='select quantum encoding for the classical input data. currently available: basis, angle, and bin for no quantum embedding but binarization')
-
-    parser.add_argument('-emp', '--embeddingparam', type=str, default='x', help='select axis for angle embedding')
-
-    parser.add_argument('-l', '--loss', type=str, default='squarehinge', help='select loss function. currently available: hinge, squarehinge, crossentropy')
-
-    parser.add_argument('-ob', '--observable', type=str, default='x', help='select pauli measurement/ quantum observable')
-
-    parser.add_argument('-op', '--optimizer', type=str, default='adam', help='select optimizer. currently available: adam')
-
-    parser.add_argument('-g', '--grayscale', type=bool, default=False, help='TBD: transform input to grayscale True or False')
-
-    parser.add_argument('-p', '--preprocessing', type=str, default='dae', help='select preprocessing technique. currently available: ds, pca, fa, ae, dae (=convae if vgg16=False), rbmae')
-
-    parser.add_argument('-de', '--device', type=str, default=None, help='torch.Device. either "cpu" or "cuda". default will check by torch.cuda.is_available() ')
-
-    args = parser.parse_args()
-
-    if args.device is None:
-        args.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    return args
